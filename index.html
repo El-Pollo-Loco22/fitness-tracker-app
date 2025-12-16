@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>FitTrack - Your Fitness Journey</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Navigation Bar -->
+    <nav class="nav-bar">
+        <div class="nav-content">
+            <h1 class="app-title">💪 FitTrack</h1>
+            <button id="nav-progress-btn" class="nav-btn" aria-label="View Progress">
+                📊
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="main-container">
+
+        <!-- Workout View -->
+        <div id="workout-view" class="view-container" style="display: none;">
+            <div class="view-header">
+                <h2 id="workout-title">Today's Workout</h2>
+                <p id="workout-subtitle" class="subtitle"></p>
+            </div>
+
+            <!-- User Stats Card -->
+            <div class="stats-card">
+                <h3>Daily Goals</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Calories</span>
+                        <span class="stat-value">2100</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Protein</span>
+                        <span class="stat-value">160g</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Carbs</span>
+                        <span class="stat-value">200g</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Fat</span>
+                        <span class="stat-value">70g</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exercise List -->
+            <div id="exercise-list" class="exercise-list">
+                <!-- Dynamically populated -->
+            </div>
+
+            <!-- Nutrition Tracking -->
+            <div class="nutrition-card">
+                <h3>Nutrition Log</h3>
+
+                <!-- Remaining Macros Display -->
+                <div id="remaining-macros-card" class="remaining-macros-display">
+                    <div class="remaining-header">Remaining Today</div>
+                    <div class="remaining-grid">
+                        <div class="remaining-item">
+                            <span class="remaining-label">Calories</span>
+                            <span class="remaining-value" id="remaining-calories">2100</span>
+                        </div>
+                        <div class="remaining-item">
+                            <span class="remaining-label">Protein</span>
+                            <span class="remaining-value" id="remaining-protein">160g</span>
+                        </div>
+                        <div class="remaining-item">
+                            <span class="remaining-label">Carbs</span>
+                            <span class="remaining-value" id="remaining-carbs">200g</span>
+                        </div>
+                        <div class="remaining-item">
+                            <span class="remaining-label">Fat</span>
+                            <span class="remaining-value" id="remaining-fat">70g</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="calories-input">Calories Consumed</label>
+                    <input type="number" inputmode="decimal" id="calories-input" placeholder="0" min="0"
+                        autocomplete="off" readonly>
+                </div>
+                <div class="macro-inputs">
+                    <div class="input-group">
+                        <label for="protein-input">Protein (g)</label>
+                        <input type="number" inputmode="decimal" id="protein-input" placeholder="0" min="0"
+                            autocomplete="off" readonly>
+                    </div>
+                    <div class="input-group">
+                        <label for="carbs-input">Carbs (g)</label>
+                        <input type="number" inputmode="decimal" id="carbs-input" placeholder="0" min="0"
+                            autocomplete="off" readonly>
+                    </div>
+                    <div class="input-group">
+                        <label for="fat-input">Fat (g)</label>
+                        <input type="number" inputmode="decimal" id="fat-input" placeholder="0" min="0"
+                            autocomplete="off" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Macro Percentage Visualization -->
+            <div class="macro-percentage-card">
+                <h3>📊 Macro Breakdown</h3>
+                <div class="macro-chart-container">
+                    <canvas id="macro-chart-canvas" width="150" height="150"></canvas>
+                </div>
+                <div class="macro-legend">
+                    <div class="legend-item">
+                        <span class="legend-dot protein-dot"></span>
+                        <span class="legend-label">Protein</span>
+                        <span class="legend-percent" id="protein-percent">0%</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot carbs-dot"></span>
+                        <span class="legend-label">Carbs</span>
+                        <span class="legend-percent" id="carbs-percent">0%</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot fat-dot"></span>
+                        <span class="legend-label">Fat</span>
+                        <span class="legend-percent" id="fat-percent">0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Water Intake Tracking -->
+            <div class="water-tracker-card">
+                <h3>💧 Water Intake</h3>
+                <div class="water-goal-display">
+                    <span class="water-count" id="water-count">0/8</span>
+                    <span class="water-label">glasses today</span>
+                </div>
+                <div class="water-progress-bar">
+                    <div class="water-progress-fill" id="water-progress-fill"></div>
+                </div>
+                <div class="water-glasses-grid">
+                    <div class="water-glass" data-index="0"></div>
+                    <div class="water-glass" data-index="1"></div>
+                    <div class="water-glass" data-index="2"></div>
+                    <div class="water-glass" data-index="3"></div>
+                    <div class="water-glass" data-index="4"></div>
+                    <div class="water-glass" data-index="5"></div>
+                    <div class="water-glass" data-index="6"></div>
+                    <div class="water-glass" data-index="7"></div>
+                </div>
+                <div class="water-controls">
+                    <button id="water-decrement-btn" class="water-btn">-</button>
+                    <button id="water-increment-btn" class="water-btn primary">+1 Glass</button>
+                </div>
+            </div>
+
+            <!-- Meal Calculator -->
+            <div class="meal-calculator">
+                <h3>🍽️ Quick Meal Logging</h3>
+                <p class="meal-example">Examples: "grilled salmon with quinoa and broccoli" or "2 eggs, oatmeal, banana"
+                </p>
+
+                <div class="input-group">
+                    <label for="meal-input">What did you eat?</label>
+                    <textarea id="meal-input" class="meal-input" placeholder="Describe your meal..." rows="3"
+                        autocomplete="off" spellcheck="true"></textarea>
+                </div>
+
+                <button id="calculate-nutrition-btn" class="secondary-btn">
+                    <span id="calc-btn-text">Calculate Nutrition</span>
+                    <span id="calc-spinner" class="spinner" style="display: none;"></span>
+                </button>
+
+                <!-- Nutrition Results -->
+                <div id="nutrition-results" class="nutrition-results" style="display: none;">
+                    <h4>Nutrition Breakdown</h4>
+                    <div class="macro-bars">
+                        <div class="macro-bar-item">
+                            <div class="macro-bar-header">
+                                <span>Calories</span>
+                                <span id="result-calories">0</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="progress-calories" class="progress-fill calories-fill"></div>
+                            </div>
+                        </div>
+                        <div class="macro-bar-item">
+                            <div class="macro-bar-header">
+                                <span>Protein</span>
+                                <span id="result-protein">0g</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="progress-protein" class="progress-fill protein-fill"></div>
+                            </div>
+                        </div>
+                        <div class="macro-bar-item">
+                            <div class="macro-bar-header">
+                                <span>Carbs</span>
+                                <span id="result-carbs">0g</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="progress-carbs" class="progress-fill carbs-fill"></div>
+                            </div>
+                        </div>
+                        <div class="macro-bar-item">
+                            <div class="macro-bar-header">
+                                <span>Fat</span>
+                                <span id="result-fat">0g</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="progress-fat" class="progress-fill fat-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="add-meal-btn" class="primary-btn">Add to Today's Log</button>
+                </div>
+
+                <!-- Meal History -->
+                <div id="meal-history" class="meal-history">
+                    <div class="history-header">
+                        <h4>Today's Meals</h4>
+                        <button id="clear-meals-btn" class="clear-btn">Clear Log</button>
+                    </div>
+                    <div id="meal-list" class="meal-list">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Body Weight Tracking -->
+            <div class="weight-card">
+                <h3>Body Weight</h3>
+                <div class="input-group">
+                    <label for="weight-input">Weight (lbs)</label>
+                    <input type="number" inputmode="decimal" id="weight-input" placeholder="175" step="0.1" min="0"
+                        autocomplete="off">
+                </div>
+            </div>
+
+            <!-- Complete Workout Button -->
+            <button id="complete-workout-btn" class="primary-btn">
+                I Finished My Workout!
+            </button>
+        </div>
+
+        <!-- Enhanced Rest Day View -->
+        <div id="rest-day-view" class="view-container" style="display: none;">
+            <div class="rest-hero-section">
+                <!-- Breathing Circle Animation -->
+                <div class="breathing-container">
+                    <div class="breathing-circle"></div>
+                    <div class="breathing-text">Breathe</div>
+                </div>
+
+                <!-- Hero Content -->
+                <h1 class="rest-hero-title">Active Recovery Day</h1>
+                <p class="rest-hero-subtitle">Your muscles grow during rest, not in the gym</p>
+
+                <!-- Rotating Recovery Tip -->
+                <div class="recovery-tip" id="recovery-tip">
+                    <span class="tip-icon">💡</span>
+                    <span class="tip-text">Drink 8-10 glasses of water today</span>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="rest-stats-grid">
+                <!-- Streak Card -->
+                <div class="rest-stat-card streak-card">
+                    <div class="stat-icon">🔥</div>
+                    <div class="stat-value" id="rest-streak-display">0</div>
+                    <div class="stat-label">Day Streak</div>
+                </div>
+
+                <!-- Weekly Progress Card -->
+                <div class="rest-stat-card progress-card">
+                    <div class="stat-label-top">This Week</div>
+                    <div class="weekly-progress-bar">
+                        <div class="weekly-progress-fill" id="weekly-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="stat-value-small" id="weekly-workouts">0/5 Workouts</div>
+                </div>
+            </div>
+
+            <!-- Next Workout Countdown -->
+            <div class="next-workout-card">
+                <div class="next-workout-label">Next Workout</div>
+                <div class="next-workout-name" id="next-workout-name">Workout B - Back & Press</div>
+                <div class="next-workout-time" id="next-workout-time">in 18 hours</div>
+            </div>
+
+            <!-- Recovery Checklist Section -->
+            <div class="recovery-checklist-section">
+                <button class="checklist-header" id="checklist-toggle">
+                    <span class="checklist-title">
+                        <span class="checklist-icon">✓</span>
+                        Recovery Checklist
+                    </span>
+                    <span class="checklist-progress" id="checklist-progress">0/6</span>
+                    <span class="chevron">▼</span>
+                </button>
+
+                <div class="checklist-content" id="checklist-content" style="display: none;">
+                    <!-- Progress Bar -->
+                    <div class="checklist-progress-bar">
+                        <div class="checklist-progress-fill" id="checklist-progress-fill" style="width: 0%"></div>
+                    </div>
+
+                    <!-- Checklist Items -->
+                    <div class="checklist-items">
+                        <label class="checklist-item">
+                            <input type="checkbox" class="recovery-checkbox" data-index="0">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">Drink 8+ glasses of water today</span>
+                        </label>
+
+                        <label class="checklist-item">
+                            <input type="checkbox" class="recovery-checkbox" data-index="1">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">Get 7-9 hours of sleep tonight</span>
+                        </label>
+
+                        <label class="checklist-item">
+                            <input type="checkbox" class="recovery-checkbox" data-index="2">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">10-15 min stretching or yoga</span>
+                        </label>
+
+                        <label class="checklist-item">
+                            <input type="checkbox" class="recovery-checkbox" data-index="3">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">Foam roll tight muscles</span>
+                        </label>
+
+                        <label class="checklist-item">
+                            <input type="checkbox" class="recovery-checkbox" data-index="4">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">Hit protein target (160g+)</span>
+                        </label>
+
+                        <label class="checklist-item">
+                            <input type="checkbox" class="recovery-checkbox" data-index="5">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">Take rest day supplements (optional)</span>
+                        </label>
+                    </div>
+
+                    <!-- Perfect Recovery Badge -->
+                    <div class="perfect-recovery-badge" id="perfect-recovery-badge" style="display: none;">
+                        <div class="badge-icon">🏆</div>
+                        <div class="badge-text">Perfect Recovery!</div>
+                        <div class="badge-subtext" id="perfect-recovery-count">You've had X perfect recovery days this
+                            month</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Cards -->
+            <div class="rest-action-cards">
+                <button id="rest-view-progress-btn" class="rest-action-card primary-action">
+                    <span class="action-icon">📊</span>
+                    <span class="action-text">View Progress</span>
+                </button>
+
+                <button id="rest-checklist-btn" class="rest-action-card secondary-action">
+                    <span class="action-icon">✓</span>
+                    <span class="action-text">Recovery Checklist</span>
+                </button>
+
+                <button id="rest-meal-tracker-btn" class="rest-action-card secondary-action">
+                    <span class="action-icon">🍽️</span>
+                    <span class="action-text">Meal Tracker</span>
+                </button>
+            </div>
+
+            <!-- Water Intake in Rest View -->
+            <div class="water-tracker-card">
+                <h3>💧 Water Intake</h3>
+                <div class="water-goal-display">
+                    <span class="water-count" id="rest-water-count">0/8</span>
+                    <span class="water-label">glasses today</span>
+                </div>
+                <div class="water-progress-bar">
+                    <div class="water-progress-fill" id="rest-water-progress-fill"></div>
+                </div>
+                <div class="water-glasses-grid">
+                    <div class="rest-water-glass" data-index="0"></div>
+                    <div class="rest-water-glass" data-index="1"></div>
+                    <div class="rest-water-glass" data-index="2"></div>
+                    <div class="rest-water-glass" data-index="3"></div>
+                    <div class="rest-water-glass" data-index="4"></div>
+                    <div class="rest-water-glass" data-index="5"></div>
+                    <div class="rest-water-glass" data-index="6"></div>
+                    <div class="rest-water-glass" data-index="7"></div>
+                </div>
+                <div class="water-controls">
+                    <button id="rest-water-decrement-btn" class="water-btn">-</button>
+                    <button id="rest-water-increment-btn" class="water-btn primary">+1 Glass</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Completion View -->
+        <div id="completion-view" class="view-container" style="display: none;">
+            <div class="completion-content">
+                <!-- Confetti Animation Container -->
+                <div id="confetti-container" class="confetti-container"></div>
+
+                <div class="celebration-icon">💪</div>
+                <h2 id="completion-header">Workout Complete!</h2>
+                <p id="completion-subtext" class="completion-message">Amazing work today! You're one step closer to your
+                    goals.</p>
+
+                <!-- Streak Display with Animation -->
+                <div class="streak-display">
+                    <div class="streak-number" id="completion-streak-number">0</div>
+                    <div class="streak-label" id="completion-streak-label">Day Streak 🔥</div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="completion-stats-card">
+                    <h4>This Week</h4>
+                    <div class="week-stat">
+                        <span class="week-stat-label">Workouts Completed:</span>
+                        <span class="week-stat-value" id="week-workouts">0/5</span>
+                    </div>
+                </div>
+
+                <button id="completion-view-progress-btn" class="primary-btn">
+                    View Progress History
+                </button>
+                <button id="completion-log-meals-btn" class="secondary-btn">
+                    Log Today's Meals
+                </button>
+            </div>
+        </div>
+
+        <!-- Progress View -->
+        <div id="progress-view" class="view-container" style="display: none;">
+            <div class="view-header">
+                <h2>Your Progress</h2>
+                <button id="back-to-workout-btn" class="back-btn">← Back</button>
+            </div>
+
+            <!-- Progress Stats -->
+            <div class="progress-summary">
+                <div class="progress-card">
+                    <h3>Current Streak</h3>
+                    <div class="big-number" id="progress-streak">0</div>
+                    <p>consecutive days 🔥</p>
+                </div>
+                <div class="progress-card">
+                    <h3>Total Workouts</h3>
+                    <div class="big-number" id="total-workouts">0</div>
+                    <p>completed</p>
+                </div>
+            </div>
+
+            <!-- Weekly Nutrition Summary -->
+            <div id="weekly-nutrition-summary" class="weekly-nutrition-summary">
+                <!-- Dynamically populated by JS -->
+            </div>
+
+            <!-- Nutrition Countdown -->
+            <div class="nutrition-countdown">
+                <h3>Today's Nutrition Remaining</h3>
+                <div id="nutrition-remaining" class="remaining-display">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+
+            <!-- 30-Day Consistency Calendar -->
+            <div class="calendar-section">
+                <h3>30-Day Consistency</h3>
+                <div id="thirty-day-calendar" class="thirty-day-grid">
+                    <!-- Dynamically populated -->
+                </div>
+                <div class="calendar-legend">
+                    <span><span class="legend-box completed-box"></span> Completed</span>
+                    <span><span class="legend-box missed-box"></span> Missed</span>
+                    <span><span class="legend-box rest-box"></span> Rest/Future</span>
+                </div>
+            </div>
+
+            <!-- Metric Input Form -->
+            <div class="metric-form">
+                <h3>Log Metrics</h3>
+
+                <!-- Date Selector -->
+                <div class="input-group">
+                    <label for="metric-date">Date</label>
+                    <input type="date" id="metric-date" class="date-input">
+                </div>
+
+                <!-- Weight Input with Unit Toggle -->
+                <div class="input-group">
+                    <label for="metric-weight">Body Weight</label>
+                    <div class="weight-input-group">
+                        <input type="number" id="metric-weight" placeholder="175" step="0.1" min="0">
+                        <div class="unit-toggle">
+                            <button id="unit-lb" class="unit-btn active" data-unit="lb">lb</button>
+                            <button id="unit-kg" class="unit-btn" data-unit="kg">kg</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exercise Performance Logger -->
+                <div class="exercise-logger">
+                    <label>Exercise Performance</label>
+                    <div class="input-group">
+                        <select id="exercise-select" class="exercise-select">
+                            <option value="">Select exercise...</option>
+                        </select>
+                    </div>
+                    <div class="performance-inputs">
+                        <div class="input-group">
+                            <label for="perf-sets">Sets</label>
+                            <input type="number" id="perf-sets" placeholder="4" min="1">
+                        </div>
+                        <div class="input-group">
+                            <label for="perf-reps">Reps</label>
+                            <input type="text" id="perf-reps" placeholder="8-10">
+                        </div>
+                        <div class="input-group">
+                            <label for="perf-weight">Weight (lbs)</label>
+                            <input type="number" id="perf-weight" placeholder="135" step="5" min="0">
+                        </div>
+                    </div>
+                    <button id="add-performance-btn" class="secondary-btn">Add Exercise Log</button>
+                </div>
+
+                <!-- Save Button -->
+                <button id="save-metrics-btn" class="primary-btn">Save All Metrics</button>
+            </div>
+
+            <!-- Weight Chart -->
+            <div class="chart-section">
+                <h3>Weight Progress</h3>
+                <div id="weight-chart" class="weight-chart">
+                    <canvas id="weight-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+
+    </main>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
