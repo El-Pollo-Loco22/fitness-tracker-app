@@ -16,6 +16,7 @@ const USER_PROFILE = {
         fat: 70,
         water: 8 // glasses per day
     },
+    restDays: [0, 4], // Sunday=0, Monday=1, ..., Saturday=6 (user customizable)
     programDuration: 7, // months
     diet: "pescatarian"
 };
@@ -75,10 +76,189 @@ const WORKOUTS = {
     }
 };
 
+// ===========================
+// EXERCISE LIBRARY DATABASE
+// ===========================
+
+const EXERCISE_LIBRARY = {
+    chest: [
+        { name: 'Barbell Bench Press', description: 'Compound pushing movement for overall chest', defaultIncrement: 5 },
+        { name: 'Incline Bench Press', description: 'Upper chest focus at 30-45° angle', defaultIncrement: 5 },
+        { name: 'Dumbbell Bench Press', description: 'Greater range of motion, balanced strength', defaultIncrement: 5 },
+        { name: 'Incline Dumbbell Press', description: 'Upper chest with dumbbells', defaultIncrement: 5 },
+        { name: 'Chest Fly', description: 'Isolation movement for chest stretch', defaultIncrement: 2.5 },
+        { name: 'Cable Flyes', description: 'Constant tension isolation', defaultIncrement: 5 },
+        { name: 'Dips', description: 'Bodyweight or weighted chest exercise', defaultIncrement: 5 },
+        { name: 'Push-ups', description: 'Classic bodyweight chest builder', defaultIncrement: 0 }
+    ],
+    back: [
+        { name: 'Deadlifts', description: 'King of back exercises, full posterior chain', defaultIncrement: 10 },
+        { name: 'Barbell Row', description: 'Compound pulling movement for thickness', defaultIncrement: 5 },
+        { name: 'Romanian Deadlift', description: 'Hamstring and lower back focus', defaultIncrement: 10 },
+        { name: 'Pull-ups', description: 'Bodyweight back and lat exercise', defaultIncrement: 0 },
+        { name: 'Lat Pulldown', description: 'Vertical pulling for lats', defaultIncrement: 5 },
+        { name: 'Cable Row', description: 'Seated rowing for mid-back', defaultIncrement: 5 },
+        { name: 'T-Bar Row', description: 'Thick back builder', defaultIncrement: 5 },
+        { name: 'Face Pulls', description: 'Rear delt and upper back', defaultIncrement: 5 }
+    ],
+    legs: [
+        { name: 'Barbell Squat', description: 'King of leg exercises', defaultIncrement: 10 },
+        { name: 'Front Squat', description: 'Quad-dominant squat variation', defaultIncrement: 10 },
+        { name: 'Leg Press', description: 'Machine-based quad builder', defaultIncrement: 20 },
+        { name: 'Dumbbell Lunges', description: 'Unilateral leg strength', defaultIncrement: 5 },
+        { name: 'Bulgarian Split Squat', description: 'Single-leg quad and glute focus', defaultIncrement: 5 },
+        { name: 'Leg Extension', description: 'Quad isolation', defaultIncrement: 10 },
+        { name: 'Leg Curl', description: 'Hamstring isolation', defaultIncrement: 10 },
+        { name: 'Calf Raise', description: 'Calf development', defaultIncrement: 10 }
+    ],
+    shoulders: [
+        { name: 'Overhead Press', description: 'Compound shoulder builder', defaultIncrement: 5 },
+        { name: 'Dumbbell Shoulder Press', description: 'Balanced shoulder strength', defaultIncrement: 5 },
+        { name: 'Lateral Raise', description: 'Side delt isolation', defaultIncrement: 2.5 },
+        { name: 'Front Raise', description: 'Front delt isolation', defaultIncrement: 2.5 },
+        { name: 'Rear Delt Fly', description: 'Rear shoulder isolation', defaultIncrement: 2.5 },
+        { name: 'Arnold Press', description: 'Full shoulder rotation press', defaultIncrement: 5 },
+        { name: 'Upright Row', description: 'Trap and shoulder builder', defaultIncrement: 5 }
+    ],
+    arms: [
+        { name: 'Barbell Curl', description: 'Classic bicep builder', defaultIncrement: 2.5 },
+        { name: 'Dumbbell Curl', description: 'Alternating or simultaneous bicep work', defaultIncrement: 2.5 },
+        { name: 'Hammer Curl', description: 'Brachialis and forearm focus', defaultIncrement: 2.5 },
+        { name: 'Triceps Pushdown', description: 'Cable tricep isolation', defaultIncrement: 5 },
+        { name: 'Skull Crushers', description: 'Lying tricep extension', defaultIncrement: 2.5 },
+        { name: 'Close-Grip Bench', description: 'Compound tricep movement', defaultIncrement: 5 },
+        { name: 'Dips', description: 'Bodyweight or weighted tricep exercise', defaultIncrement: 5 },
+        { name: 'Preacher Curl', description: 'Strict bicep isolation', defaultIncrement: 2.5 }
+    ],
+    core: [
+        { name: 'Cable Crunches', description: 'Weighted ab exercise', defaultIncrement: 5 },
+        { name: 'Plank', description: 'Core stability hold', defaultIncrement: 0 },
+        { name: 'Ab Wheel', description: 'Advanced core stability', defaultIncrement: 0 },
+        { name: 'Leg Raises', description: 'Lower ab focus', defaultIncrement: 0 },
+        { name: 'Russian Twists', description: 'Oblique rotation', defaultIncrement: 5 },
+        { name: 'Side Plank', description: 'Oblique stability', defaultIncrement: 0 },
+        { name: 'Mountain Climbers', description: 'Dynamic core movement', defaultIncrement: 0 }
+    ]
+};
+
+// User weight data storage
+let userWeights = {};
+let exerciseFeedback = {};
+
+// Load user weights from localStorage
+function loadUserWeights() {
+    const saved = localStorage.getItem('userWeights');
+    if (saved) {
+        userWeights = JSON.parse(saved);
+    }
+
+    const savedFeedback = localStorage.getItem('exerciseFeedback');
+    if (savedFeedback) {
+        exerciseFeedback = JSON.parse(savedFeedback);
+    }
+}
+
+// Save user weights to localStorage
+function saveUserWeights() {
+    localStorage.setItem('userWeights', JSON.stringify(userWeights));
+    localStorage.setItem('exerciseFeedback', JSON.stringify(exerciseFeedback));
+}
+
+// Get weight suggestion for an exercise
+function getWeightSuggestion(exerciseName) {
+    const weight = userWeights[exerciseName];
+    if (!weight || !weight.currentWeight) {
+        return { suggestion: 'Set your starting weight', increment: 0 };
+    }
+
+    // Find the exercise in the library to get default increment
+    let defaultIncrement = 5;
+    for (const bodyPart in EXERCISE_LIBRARY) {
+        const exercise = EXERCISE_LIBRARY[bodyPart].find(e => e.name === exerciseName);
+        if (exercise) {
+            defaultIncrement = exercise.defaultIncrement;
+            break;
+        }
+    }
+
+    // Get recent feedback
+    const feedback = exerciseFeedback[exerciseName];
+    const recentFeedback = feedback && feedback.length > 0 ? feedback[feedback.length - 1] : null;
+
+    if (!recentFeedback) {
+        return {
+            suggestion: `Try ${weight.currentWeight + defaultIncrement} lbs`,
+            increment: defaultIncrement
+        };
+    }
+
+    // Calculate suggestion based on feedback
+    switch (recentFeedback.type) {
+        case 'too-heavy':
+            return {
+                suggestion: `Stay at ${weight.currentWeight} lbs`,
+                increment: 0
+            };
+        case 'just-right':
+            return {
+                suggestion: `Try ${weight.currentWeight + defaultIncrement} lbs`,
+                increment: defaultIncrement
+            };
+        case 'too-light':
+            return {
+                suggestion: `Try ${weight.currentWeight + (defaultIncrement * 2)} lbs`,
+                increment: defaultIncrement * 2
+            };
+        default:
+            return {
+                suggestion: `Try ${weight.currentWeight + defaultIncrement} lbs`,
+                increment: defaultIncrement
+            };
+    }
+}
+
+// Update exercise weight
+function updateExerciseWeight(exerciseName, weight) {
+    if (!userWeights[exerciseName]) {
+        userWeights[exerciseName] = {
+            currentWeight: 0,
+            history: []
+        };
+    }
+
+    userWeights[exerciseName].currentWeight = parseFloat(weight) || 0;
+    userWeights[exerciseName].lastUpdate = new Date().toISOString();
+
+    saveUserWeights();
+}
+
+// Process feedback after exercise completion
+function processFeedback(exerciseName, feedbackType) {
+    if (!exerciseFeedback[exerciseName]) {
+        exerciseFeedback[exerciseName] = [];
+    }
+
+    const currentWeight = userWeights[exerciseName]?.currentWeight || 0;
+
+    exerciseFeedback[exerciseName].push({
+        type: feedbackType,
+        weight: currentWeight,
+        date: new Date().toISOString()
+    });
+
+    // Keep only last 10 feedback entries
+    if (exerciseFeedback[exerciseName].length > 10) {
+        exerciseFeedback[exerciseName] = exerciseFeedback[exerciseName].slice(-10);
+    }
+
+    saveUserWeights();
+}
+
+
 // API Configuration for Meal Calculator
-const USE_MOCK_API = true; // Toggle between mock and real API
-const API_KEY = 'brLV1/xgRaF9VMlFX6AFuw==SffD1WeMIFhAzdg6';
-const API_URL = 'https://api.calorieninjas.com/v1/nutrition';
+const USE_MOCK_API = false; // Toggle between mock and real API
+const API_KEY = 'c4d6a7de10bb481fbc2e58e75c260120';
+const API_URL = 'https://api.spoonacular.com/recipes/parseIngredients';
 
 // Performance Utilities
 function debounce(func, wait) {
@@ -130,14 +310,45 @@ function initializeApp() {
         timerDuration = parseInt(savedDuration);
         restTimerRemaining = timerDuration;
     }
+
+    // Load user exercise weights
+    loadUserWeights();
 }
 
 function setupEventListeners() {
     // Navigation - Add null checks for all elements
+    const navWorkoutBtn = document.getElementById('nav-workout-btn');
+    if (navWorkoutBtn) {
+        navWorkoutBtn.addEventListener('click', () => {
+            switchView('workout-view');
+        });
+    }
+
+    const navNutritionBtn = document.getElementById('nav-nutrition-btn');
+    if (navNutritionBtn) {
+        navNutritionBtn.addEventListener('click', () => {
+            switchView('nutrition-view');
+        });
+    }
+
     const navProgressBtn = document.getElementById('nav-progress-btn');
     if (navProgressBtn) {
         navProgressBtn.addEventListener('click', () => {
             switchView('progress-view');
+        });
+    }
+
+    const navLibraryBtn = document.getElementById('nav-library-btn');
+    if (navLibraryBtn) {
+        navLibraryBtn.addEventListener('click', () => {
+            switchView('exercise-library-view');
+        });
+    }
+
+    const backFromLibraryBtn = document.getElementById('back-from-library-btn');
+    if (backFromLibraryBtn) {
+        backFromLibraryBtn.addEventListener('click', () => {
+            switchView(getTodaySchedule().type === 'rest' ? 'rest-day-view' : 'workout-view');
         });
     }
 
@@ -691,6 +902,11 @@ function loadTodayData() {
     if (todayData.waterIntake === undefined) {
         todayData.waterIntake = 0;
     }
+
+    // Ensure exerciseLogs exists for legacy data
+    if (!todayData.exerciseLogs) {
+        todayData.exerciseLogs = [];
+    }
 }
 
 function renderCurrentView() {
@@ -714,6 +930,145 @@ function renderCurrentView() {
         document.getElementById('workout-view').style.display = 'block';
         currentView = 'workout-view';
     }
+}
+
+// ===========================
+// WEEKLY STREAK SYSTEM
+// ===========================
+
+function getMondayOfWeek(date) {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust if Sunday
+    d.setDate(diff);
+    return d.toISOString().split('T')[0];
+}
+
+function getWeekDays(mondayDate) {
+    const days = [];
+    const start = new Date(mondayDate);
+    for (let i = 0; i < 7; i++) {
+        const day = new Date(start);
+        day.setDate(start.getDate() + i);
+        days.push(day.toISOString().split('T')[0]);
+    }
+    return days;
+}
+
+function isRestDay(dateStr) {
+    const date = new Date(dateStr);
+    return USER_PROFILE.restDays.includes(date.getDay());
+}
+
+function calculateWeeklyStreak() {
+    const data = JSON.parse(localStorage.getItem('fitnessData'));
+    const logs = data.logs;
+
+    let weekStreak = 0;
+    let currentWeekStart = getMondayOfWeek(new Date());
+
+    // Go back week by week
+    while (true) {
+        const weekDays = getWeekDays(currentWeekStart);
+        const requiredWorkouts = weekDays.filter(day => !isRestDay(day));
+        const completedWorkouts = requiredWorkouts.filter(day => {
+            const dayLog = logs.find(log => log.date === day);
+            return dayLog?.workoutCompleted;
+        });
+
+        // Week is complete if all non-rest workouts are done
+        if (completedWorkouts.length === requiredWorkouts.length && requiredWorkouts.length > 0) {
+            weekStreak++;
+            // Move to previous week
+            const prevMonday = new Date(currentWeekStart);
+            prevMonday.setDate(prevMonday.getDate() - 7);
+            currentWeekStart = prevMonday.toISOString().split('T')[0];
+        } else {
+            break;
+        }
+    }
+
+    return weekStreak;
+}
+
+function getMonthlyConsistency() {
+    const data = JSON.parse(localStorage.getItem('fitnessData'));
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    // Get last 30 days
+    const days = [];
+    for (let i = 29; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(today.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+
+        const dayLog = data.logs.find(log => log.date === dateStr);
+        const isRest = isRestDay(dateStr);
+        const isCompleted = dayLog?.workoutCompleted;
+        const isFuture = new Date(dateStr) > new Date(todayStr);
+        const dayOfMonth = date.getDate();
+
+        let statusClass = 'day-future';
+
+        if (isFuture || isRest) {
+            statusClass = 'day-rest-future';
+        } else if (isCompleted) {
+            statusClass = 'day-complete';
+        } else {
+            statusClass = 'day-missed';
+        }
+
+        days.push({
+            day: dayOfMonth,
+            statusClass,
+            isToday: dateStr === todayStr
+        });
+    }
+
+    return days;
+}
+
+function renderMonthlyConsistency() {
+    const days = getMonthlyConsistency();
+    const weekStreak = calculateWeeklyStreak();
+
+    const calendarHTML = days.map(day => {
+        return `
+            <div class="cal-day ${day.statusClass} ${day.isToday ? 'today' : ''}">
+                ${day.day}
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="monthly-consistency-widget">
+            <div class="consistency-header">
+                <h3>30-Day Consistency</h3>
+                <div class="streak-badge">
+                    <span class="streak-icon">🔥</span>
+                    <span class="streak-text">${weekStreak} Week Streak</span>
+                </div>
+            </div>
+            <div class="calendar-grid">
+                ${calendarHTML}
+            </div>
+            <div class="calendar-legend">
+                <div class="legend-item">
+                    <div class="legend-box completed"></div>
+                    <span>Completed</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box missed"></div>
+                    <span>Missed</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box rest"></div>
+                    <span>Rest/Future</span>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 // ===========================
@@ -822,7 +1177,7 @@ function renderWorkoutView(schedule) {
     exerciseList.innerHTML = '';
 
     workout.exercises.forEach((exercise, index) => {
-        const isCompleted = todayData.exerciseLogs.includes(index);
+        const isCompleted = todayData.exerciseLogs && todayData.exerciseLogs.includes(index);
 
         // Get last week's performance if available and calculate improvements
         let lastPerformance = '';
@@ -966,11 +1321,19 @@ function renderWorkoutView(schedule) {
                     saveExercisePerformance(exercise.name, exercise.sets, exercise.reps, weight);
                 }
 
+                if (!todayData.exerciseLogs) {
+                    todayData.exerciseLogs = [];
+                }
                 if (!todayData.exerciseLogs.includes(index)) {
                     todayData.exerciseLogs.push(index);
                     saveTodayData();
                 }
                 exerciseDiv.classList.add('completed');
+
+                // Show feedback prompt for weighted exercises
+                if (exercise.weight) {
+                    showFeedbackPrompt(exercise.name, exerciseDiv);
+                }
             } else {
                 const logIndex = todayData.exerciseLogs.indexOf(index);
                 if (logIndex > -1) {
@@ -978,6 +1341,12 @@ function renderWorkoutView(schedule) {
                     saveTodayData();
                 }
                 exerciseDiv.classList.remove('completed');
+
+                // Remove feedback if unchecking
+                const existingFeedback = exerciseDiv.querySelector('.weight-feedback');
+                if (existingFeedback) {
+                    existingFeedback.remove();
+                }
             }
         });
 
@@ -1046,8 +1415,11 @@ function renderWorkoutView(schedule) {
     // Update remaining macros display
     updateRemainingMacros();
 
-    // Update water tracker display
-    updateWaterDisplay();
+    // Render monthly consistency calendar
+    const consistencyContainer = document.getElementById('monthly-consistency-container');
+    if (consistencyContainer) {
+        consistencyContainer.innerHTML = renderMonthlyConsistency();
+    }
 
     // Update macro percentage chart
     updateMacroChart();
@@ -1317,6 +1689,239 @@ function renderProgressView() {
 
     // Render weight chart
     renderWeightChart(data);
+}
+
+// ===========================
+// EXERCISE LIBRARY RENDERING
+// ===========================
+
+function renderExerciseLibrary() {
+    const sectionsContainer = document.getElementById('exercise-sections');
+    if (!sectionsContainer) return;
+
+    sectionsContainer.innerHTML = '';
+
+    const bodyPartOrder = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core'];
+    const bodyPartIcons = {
+        chest: '\ud83d\udcaa',
+        back: '\ud83e\udd37',
+        legs: '\ud83e\uddb5',
+        shoulders: '\ud83c\udfcb\ufe0f',
+        arms: '\ud83d\udcaa',
+        core: '\u26a1'
+    };
+
+    const bodyPartLabels = {
+        chest: 'Chest',
+        back: 'Back',
+        legs: 'Legs',
+        shoulders: 'Shoulders',
+        arms: 'Arms',
+        core: 'Core/Abs'
+    };
+
+    bodyPartOrder.forEach(bodyPart => {
+        const exercises = EXERCISE_LIBRARY[bodyPart];
+        if (!exercises || exercises.length === 0) return;
+
+        const section = document.createElement('div');
+        section.className = 'body-part-section';
+        section.dataset.bodyPart = bodyPart;
+
+        // Create header
+        const header = document.createElement('div');
+        header.className = 'body-part-header';
+        header.innerHTML = `
+            <div class="body-part-title">
+                <span class="body-part-icon">${bodyPartIcons[bodyPart]}</span>
+                <span class="body-part-name">${bodyPartLabels[bodyPart]}</span>
+                <span class="exercise-count">${exercises.length} exercises</span>
+            </div>
+            <span class="chevron">▼</span>
+        `;
+
+        // Create exercise grid (initially hidden)
+        const exerciseGrid = document.createElement('div');
+        exerciseGrid.className = 'exercise-grid';
+        exerciseGrid.style.display = 'none';
+
+        exercises.forEach(exercise => {
+            const exerciseItem = document.createElement('div');
+            exerciseItem.className = 'exercise-library-item';
+            exerciseItem.dataset.exerciseName = exercise.name.toLowerCase();
+
+            const currentWeight = userWeights[exercise.name]?.currentWeight || '';
+            const suggestion = getWeightSuggestion(exercise.name);
+
+            exerciseItem.innerHTML = `
+                <div class="exercise-item-header">
+                    <h4 class="exercise-item-name">${exercise.name}</h4>
+                </div>
+                <p class="exercise-item-description">${exercise.description}</p>
+                <div class="exercise-weight-section">
+                    <label for="weight-${exercise.name.replace(/\s+/g, '-')}" class="weight-label">
+                        Current Weight:
+                    </label>
+                    <div class="weight-input-group">
+                        <input 
+                            type="number" 
+                            id="weight-${exercise.name.replace(/\s+/g, '-')}"
+                            class="exercise-weight-input" 
+                            placeholder="0"
+                            value="${currentWeight}"
+                            min="0"
+                            step="${exercise.defaultIncrement}"
+                            data-exercise="${exercise.name}"
+                        >
+                        <span class="weight-unit">lbs</span>
+                    </div>
+                    <div class="weight-suggestion">
+                        💡 ${suggestion.suggestion}
+                    </div>
+                </div>
+            `;
+
+            exerciseGrid.appendChild(exerciseItem);
+        });
+
+        // Toggle section on header click
+        header.addEventListener('click', () => {
+            const isOpen = exerciseGrid.style.display !== 'none';
+            exerciseGrid.style.display = isOpen ? 'none' : 'block';
+            header.querySelector('.chevron').style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+        });
+
+        section.appendChild(header);
+        section.appendChild(exerciseGrid);
+        sectionsContainer.appendChild(section);
+    });
+
+    // Add weight input listeners
+    setupExerciseWeightListeners();
+
+    // Setup search functionality
+    setupExerciseSearch();
+}
+
+function setupExerciseWeightListeners() {
+    const weightInputs = document.querySelectorAll('.exercise-weight-input');
+    weightInputs.forEach(input => {
+        input.addEventListener('change', (e) => {
+            const exerciseName = e.target.dataset.exercise;
+            const weight = parseFloat(e.target.value) || 0;
+            updateExerciseWeight(exerciseName, weight);
+
+            // Update suggestion
+            const suggestionDiv = e.target.closest('.exercise-weight-section').querySelector('.weight-suggestion');
+            const suggestion = getWeightSuggestion(exerciseName);
+            suggestionDiv.textContent = `💡 ${suggestion.suggestion}`;
+        });
+    });
+}
+
+function setupExerciseSearch() {
+    const searchInput = document.getElementById('exercise-search');
+    if (!searchInput) return;
+
+    searchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const sections = document.querySelectorAll('.body-part-section');
+
+        sections.forEach(section => {
+            const exercises = section.querySelectorAll('.exercise-library-item');
+            let hasVisibleExercises = false;
+
+            exercises.forEach(exercise => {
+                const exerciseName = exercise.dataset.exerciseName;
+                if (exerciseName.includes(searchTerm)) {
+                    exercise.style.display = 'block';
+                    hasVisibleExercises = true;
+                } else {
+                    exercise.style.display = 'none';
+                }
+            });
+
+            // Show/hide entire section based on matches
+            section.style.display = hasVisibleExercises ? 'block' : 'none';
+
+            // Auto-expand section if searching and has matches
+            if (searchTerm && hasVisibleExercises) {
+                const grid = section.querySelector('.exercise-grid');
+                const chevron = section.querySelector('.chevron');
+                grid.style.display = 'block';
+                chevron.style.transform = 'rotate(180deg)';
+            }
+        });
+    });
+}
+
+// ===========================
+// WORKOUT FEEDBACK SYSTEM
+// ===========================
+
+function showFeedbackPrompt(exerciseName, exerciseDiv) {
+    // Remove any existing feedback
+    const existingFeedback = exerciseDiv.querySelector('.weight-feedback');
+    if (existingFeedback) {
+        existingFeedback.remove();
+    }
+
+    const currentWeight = userWeights[exerciseName]?.currentWeight || 0;
+
+    const feedbackDiv = document.createElement('div');
+    feedbackDiv.className = 'weight-feedback';
+    feedbackDiv.innerHTML = `
+        <div class="feedback-question">💭 How did ${currentWeight} lbs feel?</div>
+        <div class="feedback-buttons">
+            <button class="feedback-btn heavy" data-feedback="too-heavy">
+                <span class="feedback-emoji">😰</span>
+                <span>Too Heavy</span>
+            </button>
+            <button class="feedback-btn right" data-feedback="just-right">
+                <span class="feedback-emoji">👍</span>
+                <span>Just Right</span>
+            </button>
+            <button class="feedback-btn light" data-feedback="too-light">
+                <span class="feedback-emoji">💪</span>
+                <span>Too Light</span>
+            </button>
+        </div>
+    `;
+
+    // Insert after rest timer or exercise details
+    const restTimer = exerciseDiv.querySelector('.rest-timer');
+    if (restTimer) {
+        restTimer.insertAdjacentElement('afterend', feedbackDiv);
+    } else {
+        exerciseDiv.appendChild(feedbackDiv);
+    }
+
+    // Add click handlers for feedback buttons
+    const feedbackButtons = feedbackDiv.querySelectorAll('.feedback-btn');
+    feedbackButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const feedbackType = button.dataset.feedback;
+            processFeedback(exerciseName, feedbackType);
+
+            // Show confirmation and update suggestion
+            const suggestion = getWeightSuggestion(exerciseName);
+
+            feedbackDiv.innerHTML = `
+                <div class="feedback-confirmation">
+                    <span class="confirmation-icon">✅</span>
+                    <span class="confirmation-text">
+                        Noted! Next time: ${suggestion.suggestion}
+                    </span>
+                </div>
+            `;
+
+            // Remove feedback after 3 seconds
+            setTimeout(() => {
+                feedbackDiv.style.opacity = '0';
+                setTimeout(() => feedbackDiv.remove(), 300);
+            }, 3000);
+        });
+    });
 }
 
 function renderWeeklyNutritionSummary(data) {
@@ -1952,6 +2557,21 @@ function saveTodayData() {
     }
 
     localStorage.setItem('fitnessData', JSON.stringify(data));
+
+    // Sync to cloud if authenticated
+    if (window.isAuthenticated && window.isAuthenticated()) {
+        saveWorkoutToCloud(todayData).then(result => {
+            if (result.success && window.updateSyncStatus) {
+                window.updateSyncStatus('synced', 'Saved');
+            } else if (!result.success) {
+                // Queue for later if offline
+                queueOfflineChange('saveWorkout', todayData);
+            }
+        }).catch(err => {
+            console.error('Cloud sync error:', err);
+            queueOfflineChange('saveWorkout', todayData);
+        });
+    }
 }
 
 function updateStreak() {
@@ -2002,9 +2622,18 @@ function switchView(viewId) {
     targetView.style.display = 'block';
     currentView = viewId;
 
-    // If switching to progress view, render it
+    // Handle view-specific rendering
     if (viewId === 'progress-view') {
         renderProgressView();
+    } else if (viewId === 'nutrition-view') {
+        // Update nutrition data when switching to nutrition view
+        updateNutritionInputs();
+    } else if (viewId === 'workout-view') {
+        // Ensure workout is up to date
+        renderWorkoutView(getTodaySchedule());
+    } else if (viewId === 'exercise-library-view') {
+        // Render exercise library
+        renderExerciseLibrary();
     }
 
     // Scroll to top
@@ -2050,14 +2679,21 @@ function mockFetchNutritionData(query) {
     });
 }
 
-// Real API function using CalorieNinjas
+// Real API function using Spoonacular
 async function fetchNutritionData(query) {
     try {
-        const response = await fetch(`${API_URL}?query=${encodeURIComponent(query)}`, {
-            method: 'GET',
+        // Spoonacular parseIngredients requires POST with form data
+        const formData = new URLSearchParams();
+        formData.append('ingredientList', query);
+        formData.append('servings', '1');
+        formData.append('includeNutrition', 'true');
+
+        const response = await fetch(`${API_URL}?apiKey=${API_KEY}`, {
+            method: 'POST',
             headers: {
-                'X-Api-Key': API_KEY
-            }
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: formData
         });
 
         if (!response.ok) {
@@ -2066,15 +2702,24 @@ async function fetchNutritionData(query) {
 
         const data = await response.json();
 
-        // CalorieNinjas returns an array of items
-        if (data.items && data.items.length > 0) {
-            // Sum up all items
-            const totals = data.items.reduce((acc, item) => {
+        // Spoonacular returns an array of parsed ingredients
+        if (data && data.length > 0) {
+            // Sum up all ingredients' nutrition
+            const totals = data.reduce((acc, item) => {
+                const nutrition = item.nutrition || {};
+                const nutrients = nutrition.nutrients || [];
+
+                // Find specific nutrients by name
+                const calories = nutrients.find(n => n.name === 'Calories')?.amount || 0;
+                const protein = nutrients.find(n => n.name === 'Protein')?.amount || 0;
+                const carbs = nutrients.find(n => n.name === 'Carbohydrates')?.amount || 0;
+                const fat = nutrients.find(n => n.name === 'Fat')?.amount || 0;
+
                 return {
-                    calories: acc.calories + (item.calories || 0),
-                    protein: acc.protein + (item.protein_g || 0),
-                    carbs: acc.carbs + (item.carbohydrates_total_g || 0),
-                    fat: acc.fat + (item.fat_total_g || 0)
+                    calories: acc.calories + calories,
+                    protein: acc.protein + protein,
+                    carbs: acc.carbs + carbs,
+                    fat: acc.fat + fat
                 };
             }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
@@ -2324,3 +2969,36 @@ function clearMealLog() {
     updateNutritionInputs();
     renderMealHistory();
 }
+
+
+// Organize nutrition content into separate view
+function organizeViews() {
+    const nutritionView = document.getElementById('nutrition-view');
+    const workoutView = document.getElementById('workout-view');
+
+    if (!nutritionView || !workoutView) return;
+
+    // Only move if nutrition-view is still empty (has just header)
+    if (nutritionView.children.length <= 2) {
+        // Find all nutrition-related elements in workout-view
+        const statsCard = workoutView.querySelector('.stats-card');
+        const nutritionCard = workoutView.querySelector('.nutrition-card');
+        const macroCard = workoutView.querySelector('.macro-percentage-card');
+        const waterCard = workoutView.querySelector('.water-tracker-card');
+        const mealCalc = workoutView.querySelector('.meal-calculator');
+        const weightCard = workoutView.querySelector('.weight-card');
+
+        // Move them to nutrition-view
+        if (statsCard) nutritionView.appendChild(statsCard);
+        if (nutritionCard) nutritionView.appendChild(nutritionCard);
+        if (macroCard) nutritionView.appendChild(macroCard);
+        if (waterCard) nutritionView.appendChild(waterCard);
+        if (mealCalc) nutritionView.appendChild(mealCalc);
+        if (weightCard) nutritionView.appendChild(weightCard);
+
+        console.log('✅ Views organized: Nutrition content moved to nutrition-view');
+    }
+}
+
+// Call organizeViews after page loads
+document.addEventListener('DOMContentLoaded', organizeViews);

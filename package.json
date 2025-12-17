@@ -1,0 +1,23 @@
+{
+  "name": "rtsb",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/El-Pollo-Loco22/fitness-tracker-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/El-Pollo-Loco22/fitness-tracker-app/issues"
+  },
+  "homepage": "https://github.com/El-Pollo-Loco22/fitness-tracker-app#readme",
+  "description": "",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.88.0"
+  }
+}

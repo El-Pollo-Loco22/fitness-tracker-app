@@ -8,21 +8,101 @@
     <meta name="mobile-web-app-capable" content="yes">
     <title>FitTrack - Your Fitness Journey</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="icons.css">
+
+    <!-- Supabase Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
     <!-- Navigation Bar -->
     <nav class="nav-bar">
         <div class="nav-content">
-            <h1 class="app-title">💪 FitTrack</h1>
-            <button id="nav-progress-btn" class="nav-btn" aria-label="View Progress">
-                📊
-            </button>
+            <h1 class="app-title"><img src="Icons/barbell.svg" alt="FitTrack" class="app-icon"> FitTrack</h1>
+            <div class="nav-right">
+                <!-- Sync Status Indicator -->
+                <div id="sync-status" class="sync-status" style="display: none;">
+                    <span class="sync-icon">☁️</span>
+                    <span class="sync-text">Synced</span>
+                </div>
+                <button id="nav-workout-btn" class="nav-btn" aria-label="Workout" title="Workout">
+                    <img src="Icons/treadmill.svg" alt="Workout" class="nav-icon">
+                </button>
+                <button id="nav-nutrition-btn" class="nav-btn" aria-label="Nutrition" title="Daily Macros">
+                    <img src="Icons/bucket-droplet.svg" alt="Nutrition" class="nav-icon">
+                </button>
+                <button id="nav-progress-btn" class="nav-btn" aria-label="View Progress" title="Progress">
+                    <img src="Icons/barbell.svg" alt="Progress" class="nav-icon">
+                </button>
+                <button id="nav-library-btn" class="nav-btn" aria-label="Exercise Library" title="Exercise Library">
+                    <img src="Icons/books.svg" alt="Exercise Library" class="nav-icon">
+                </button>
+                <button id="sign-out-btn" class="nav-btn" aria-label="Sign Out" style="display: none;">
+                    ↪️
+                </button>
+            </div>
         </div>
     </nav>
 
+    <!-- Authentication Modal -->
+    <div id="auth-modal" class="auth-modal">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h1 class="auth-logo"><img src="Icons/barbell.svg" alt="FitTrack" class="auth-icon"> FitTrack</h1>
+                <p class="auth-tagline">Your Personal Fitness Journey</p>
+            </div>
+
+            <div class="auth-tabs">
+                <button id="tab-signin" class="auth-tab active">Sign In</button>
+                <button id="tab-signup" class="auth-tab">Sign Up</button>
+            </div>
+
+            <!-- Sign In Form -->
+            <form id="signin-form" class="auth-form">
+                <div class="input-group">
+                    <label for="signin-email">Email</label>
+                    <input type="email" id="signin-email" placeholder="your@email.com" required autocomplete="email">
+                </div>
+                <div class="input-group">
+                    <label for="signin-password">Password</label>
+                    <input type="password" id="signin-password" placeholder="••••••••" required
+                        autocomplete="current-password">
+                </div>
+                <div id="signin-error" class="auth-error" style="display: none;"></div>
+                <button type="submit" class="auth-submit-btn">
+                    <span id="signin-btn-text">Sign In</span>
+                    <span id="signin-spinner" class="spinner" style="display: none;"></span>
+                </button>
+            </form>
+
+            <!-- Sign Up Form -->
+            <form id="signup-form" class="auth-form" style="display: none;">
+                <div class="input-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" placeholder="your@email.com" required autocomplete="email">
+                </div>
+                <div class="input-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" placeholder="••••••••" required
+                        autocomplete="new-password" minlength="6">
+                </div>
+                <div class="input-group">
+                    <label for="signup-confirm-password">Confirm Password</label>
+                    <input type="password" id="signup-confirm-password" placeholder="••••••••" required
+                        autocomplete="new-password" minlength="6">
+                </div>
+                <div id="signup-error" class="auth-error" style="display: none;"></div>
+                <button type="submit" class="auth-submit-btn">
+                    <span id="signup-btn-text">Create Account</span>
+                    <span id="signup-spinner" class="spinner" style="display: none;"></span>
+                </button>
+                <p class="auth-note">Your data will be synced to the cloud and accessible from any device.</p>
+            </form>
+        </div>
+    </div>
+
     <!-- Main Container -->
-    <main class="main-container">
+    <main id="app-content" class="main-container" style="display: none;">
 
         <!-- Workout View -->
         <div id="workout-view" class="view-container" style="display: none;">
@@ -53,6 +133,7 @@
                     </div>
                 </div>
             </div>
+
 
             <!-- Exercise List -->
             <div id="exercise-list" class="exercise-list">
@@ -112,7 +193,7 @@
 
             <!-- Macro Percentage Visualization -->
             <div class="macro-percentage-card">
-                <h3>📊 Macro Breakdown</h3>
+                <h3><img src="Icons/chart-pie-2.svg" alt="" class="section-icon"> Macro Breakdown</h3>
                 <div class="macro-chart-container">
                     <canvas id="macro-chart-canvas" width="150" height="150"></canvas>
                 </div>
@@ -163,7 +244,7 @@
 
             <!-- Meal Calculator -->
             <div class="meal-calculator">
-                <h3>🍽️ Quick Meal Logging</h3>
+                <h3><img src="Icons/grill.svg" alt="" class="section-icon"> Quick Meal Logging</h3>
                 <p class="meal-example">Examples: "grilled salmon with quinoa and broccoli" or "2 eggs, oatmeal, banana"
                 </p>
 
@@ -244,10 +325,19 @@
                 </div>
             </div>
 
+
             <!-- Complete Workout Button -->
-            <button id="complete-workout-btn" class="primary-btn">
-                I Finished My Workout!
-            </button>
+            <button id="complete-workout-btn" class="primary-btn">Complete Workout</button>
+        </div>
+
+        <!-- Nutrition View (Daily Macro Breakdown) -->
+        <div id="nutrition-view" class="view-container" style="display: none;">
+            <div class="view-header">
+                <h2>Daily Macro Breakdown</h2>
+                <p class="subtitle">Track your meals and hydration</p>
+            </div>
+
+            <!-- Content will be moved here -->
         </div>
 
         <!-- Enhanced Rest Day View -->
@@ -365,7 +455,8 @@
             <!-- Action Cards -->
             <div class="rest-action-cards">
                 <button id="rest-view-progress-btn" class="rest-action-card primary-action">
-                    <span class="action-icon">📊</span>
+                    <span class="action-icon"><img src="Icons/chart-bar-popular.svg" alt=""
+                            class="action-icon-img"></span>
                     <span class="action-text">View Progress</span>
                 </button>
 
@@ -375,7 +466,7 @@
                 </button>
 
                 <button id="rest-meal-tracker-btn" class="rest-action-card secondary-action">
-                    <span class="action-icon">🍽️</span>
+                    <span class="action-icon"><img src="Icons/grill.svg" alt="" class="action-icon-img"></span>
                     <span class="action-text">Meal Tracker</span>
                 </button>
             </div>
@@ -413,7 +504,8 @@
                 <!-- Confetti Animation Container -->
                 <div id="confetti-container" class="confetti-container"></div>
 
-                <div class="celebration-icon">💪</div>
+                <div class="celebration-icon"><img src="Icons/barbell.svg" alt="Workout Complete"
+                        class="celebration-svg"></div>
                 <h2 id="completion-header">Workout Complete!</h2>
                 <p id="completion-subtext" class="completion-message">Amazing work today! You're one step closer to your
                     goals.</p>
@@ -506,7 +598,6 @@
                         <input type="number" id="metric-weight" placeholder="175" step="0.1" min="0">
                         <div class="unit-toggle">
                             <button id="unit-lb" class="unit-btn active" data-unit="lb">lb</button>
-                            <button id="unit-kg" class="unit-btn" data-unit="kg">kg</button>
                         </div>
                     </div>
                 </div>
@@ -538,20 +629,43 @@
 
                 <!-- Save Button -->
                 <button id="save-metrics-btn" class="primary-btn">Save All Metrics</button>
-            </div>
 
-            <!-- Weight Chart -->
-            <div class="chart-section">
-                <h3>Weight Progress</h3>
-                <div id="weight-chart" class="weight-chart">
-                    <canvas id="weight-canvas"></canvas>
+                <!-- Weight Chart -->
+                <div class="chart-section">
+                    <h3>Weight Progress</h3>
+                    <div id="weight-chart" class="weight-chart">
+                        <canvas id="weight-canvas"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- Exercise Library View -->
+        <div id="exercise-library-view" class="view-container" style="display: none;">
+            <div class="view-header">
+                <h2>Exercise Library</h2>
+                <button id="back-from-library-btn" class="back-btn">← Back</button>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="library-search-container">
+                <input type="text" id="exercise-search" class="library-search" placeholder="🔍 Search exercises...">
+            </div>
+
+            <!-- Exercise Sections -->
+            <div id="exercise-sections" class="exercise-sections">
+                <!-- Dynamically populated by JavaScript -->
+            </div>
+        </div>
 
     </main>
 
+
+    <!-- JavaScript Files -->
+    <script src="supabaseConfig.js"></script>
+    <script src="supabaseClient.js"></script>
+    <script src="supabaseService.js"></script>
+    <script src="authHandlers.js"></script>
     <script src="app.js"></script>
 </body>
 
