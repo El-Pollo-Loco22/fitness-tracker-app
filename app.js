@@ -1139,6 +1139,13 @@ function saveExercisePerformance(exerciseName, sets, reps, weight) {
 
 function renderWorkoutView(schedule) {
     const workout = WORKOUTS[schedule.workoutKey];
+
+    // Safety check: if this is a rest day, don't try to render workout
+    if (!workout || schedule.type === 'rest') {
+        console.warn('Cannot render workout view for rest day or invalid schedule');
+        return;
+    }
+
     const data = JSON.parse(localStorage.getItem('fitnessData'));
 
     // Format current date
@@ -2629,8 +2636,18 @@ function switchView(viewId) {
         // Update nutrition data when switching to nutrition view
         updateNutritionInputs();
     } else if (viewId === 'workout-view') {
-        // Ensure workout is up to date
-        renderWorkoutView(getTodaySchedule());
+        // Check if today is a rest day or a workout day
+        const schedule = getTodaySchedule();
+        if (schedule.type === 'rest') {
+            // Show rest day view instead
+            renderRestDayView();
+            targetView.style.display = 'none';
+            document.getElementById('rest-day-view').style.display = 'block';
+            currentView = 'rest-day-view';
+        } else {
+            // Ensure workout is up to date
+            renderWorkoutView(schedule);
+        }
     } else if (viewId === 'exercise-library-view') {
         // Render exercise library
         renderExerciseLibrary();
