@@ -1011,12 +1011,14 @@ function getMonthlyConsistency() {
 
         let statusClass = 'day-future';
 
-        if (isFuture || isRest) {
-            statusClass = 'day-rest-future';
+        if (isFuture) {
+            statusClass = 'day-rest-future';  // Future days
+        } else if (isRest) {
+            statusClass = 'day-rest-future';  // Past rest days
         } else if (isCompleted) {
-            statusClass = 'day-complete';
+            statusClass = 'day-complete';  // Completed workout days
         } else {
-            statusClass = 'day-missed';
+            statusClass = 'day-missed';  // Missed workout days
         }
 
         days.push({
@@ -2595,22 +2597,53 @@ function updateStreak() {
         return;
     }
 
-    // Calculate streak
+    // Calculate streak - account for rest days
     let streak = 1;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     let currentDate = new Date(sortedLogs[0].date);
+    currentDate.setHours(0, 0, 0, 0);
 
     for (let i = 1; i < sortedLogs.length; i++) {
         const logDate = new Date(sortedLogs[i].date);
-        const dayDiff = Math.floor((currentDate - logDate) / (1000 * 60 * 60 * 24));
+        logDate.setHours(0, 0, 0, 0);
 
-        if (dayDiff === 1) {
+        // Calculate expected previous workout day (skipping rest days)
+        let expectedDate = new Date(currentDate);
+        expectedDate.setDate(expectedDate.getDate() - 1);
+
+        // Skip backwards over rest days to find the previous workout day
+        while (isRestDay(expectedDate.toISOString().split('T')[0])) {
+            expectedDate.setDate(expectedDate.getDate() - 1);
+        }
+
+        // Check if this log is from the expected previous workout day
+        if (logDate.getTime() === expectedDate.getTime()) {
             streak++;
             currentDate = logDate;
         } else {
-            break;
+            // Check if there are rest days between current and log date
+            let daysBetween = Math.floor((currentDate - logDate) / (1000 * 60 * 60 * 24));
+            let allRestDays = true;
+
+            // Check each day between current and log date
+            for (let d = 1; d < daysBetween; d++) {
+                let checkDate = new Date(currentDate);
+                checkDate.setDate(checkDate.getDate() - d);
+                if (!isRestDay(checkDate.toISOString().split('T')[0])) {
+                    allRestDays = false;
+                    break;
+                }
+            }
+
+            // Only continue streak if all days between were rest days
+            if (allRestDays && daysBetween <= 7) { // Max 7 days to prevent weird edge cases
+                streak++;
+                currentDate = logDate;
+            } else {
+                break;
+            }
         }
     }
 
