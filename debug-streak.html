@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitTrack Debug - Streak & Consistency</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0f172a;
+            color: #f8fafc;
+        }
+
+        h1 {
+            color: #60a5fa;
+        }
+
+        h2 {
+            color: #a78bfa;
+            margin-top: 30px;
+        }
+
+        .section {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #334155;
+        }
+
+        .data {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background: #2563eb;
+        }
+
+        .btn.danger {
+            background: #ef4444;
+        }
+
+        .btn.danger:hover {
+            background: #dc2626;
+        }
+
+        .log-item {
+            background: #334155;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 6px;
+            border-left: 4px solid #10b981;
+        }
+
+        .log-item.missed {
+            border-left-color: #ef4444;
+        }
+
+        .stat {
+            display: inline-block;
+            background: #334155;
+            padding: 8px 16px;
+            border-radius: 6px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .stat strong {
+            color: #60a5fa;
+        }
+
+        .warning {
+            background: #fef3c7;
+            color: #78350f;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #10b981;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 FitTrack Debug Tool</h1>
+    <p>This tool helps diagnose issues with your streak and consistency tracker.</p>
+
+    <div class="section">
+        <h2>📊 Current Data Overview</h2>
+        <div id="overview"></div>
+    </div>
+
+    <div class="section">
+        <h2>📅 Recent Workout Logs (Last 14 Days)</h2>
+        <div id="logs"></div>
+    </div>
+
+    <div class="section">
+        <h2>🔥 Streak Calculation Details</h2>
+        <div id="streak-details"></div>
+    </div>
+
+    <div class="section">
+        <h2>📆 30-Day Consistency Status</h2>
+        <div id="consistency"></div>
+    </div>
+
+    <div class="section">
+        <h2>⚙️ Rest Days Configuration</h2>
+        <div id="rest-days"></div>
+    </div>
+
+    <div class="section">
+        <h2>🛠️ Actions</h2>
+        <button class="btn" onclick="recalculateStreak()">🔄 Recalculate Streak</button>
+        <button class="btn" onclick="downloadData()">💾 Download Data Backup</button>
+        <button class="btn danger" onclick="clearCache()">🗑️ Clear Cache & Reload</button>
+    </div>
+
+    <script>
+        // Load fitness data
+        const data = JSON.parse(localStorage.getItem('fitnessData') || '{"logs":[],"streak":0}');
+
+        const restDays = [0, 4]; // Sunday=0, Thursday=4
+        const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        function isRestDay(dateStr) {
+            const date = new Date(dateStr);
+            return restDays.includes(date.getDay());
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const dayName = daysOfWeek[date.getDay()];
+            return `${dayName}, ${date.toLocaleDateString()}`;
+        }
+
+        // Display overview
+        function displayOverview() {
+            const html = `
+                <div class="stat"><strong>Current Streak:</strong> ${data.streak} days</div>
+                <div class="stat"><strong>Total Logs:</strong> ${data.logs.length}</div>
+                <div class="stat"><strong>Completed Workouts:</strong> ${data.logs.filter(l => l.workoutCompleted).length}</div>
+                <div class="stat"><strong>Rest Days Config:</strong> ${restDays.map(d => daysOfWeek[d]).join(', ')}</div>
+            `;
+            document.getElementById('overview').innerHTML = html;
+        }
+
+        // Display recent logs
+        function displayLogs() {
+            const today = new Date();
+            const fourteenDaysAgo = new Date(today);
+            fourteenDaysAgo.setDate(today.getDate() - 14);
+
+            const recentLogs = data.logs
+                .filter(log => new Date(log.date) >= fourteenDaysAgo)
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (recentLogs.length === 0) {
+                document.getElementById('logs').innerHTML = '<div class="warning">⚠️ No workout logs found in the last 14 days!</div>';
+                return;
+            }
+
+            let html = '';
+            for (let i = 13; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(today.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                const log = recentLogs.find(l => l.date === dateStr);
+                const isRest = isRestDay(dateStr);
+                const isFuture = date > today;
+
+                if (isFuture) continue;
+
+                const status = isRest ? '🛏️ REST DAY' :
+                    log?.workoutCompleted ? '✅ COMPLETED' :
+                        '❌ MISSED';
+                const cssClass = (!isRest && !log?.workoutCompleted) ? 'missed' : '';
+
+                html += `
+                    <div class="log-item ${cssClass}">
+                        <strong>${formatDate(dateStr)}</strong> - ${status}
+                        ${log ? `<br><small>Calories: ${log.nutritionConsumed?.calories || 0}, Weight: ${log.bodyWeight || 'N/A'}</small>` : ''}
+                    </div>
+                `;
+            }
+            document.getElementById('logs').innerHTML = html;
+        }
+
+        // Calculate and display streak details
+        function displayStreakDetails() {
+            const sortedLogs = data.logs
+                .filter(log => log.workoutCompleted)
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (sortedLogs.length === 0) {
+                document.getElementById('streak-details').innerHTML = '<div class="warning">⚠️ No completed workouts found! Complete a workout to start your streak.</div>';
+                return;
+            }
+
+            let html = `<div class="success">✅ Found ${sortedLogs.length} completed workouts</div>`;
+            html += `<p><strong>Most recent workout:</strong> ${formatDate(sortedLogs[0].date)}</p>`;
+
+            // Recalculate streak
+            let streak = 1;
+            let currentDate = new Date(sortedLogs[0].date);
+            currentDate.setHours(0, 0, 0, 0);
+
+            html += '<h3>Streak Breakdown:</h3>';
+            html += `<div class="log-item">Day 1: ${formatDate(sortedLogs[0].date)}</div>`;
+
+            for (let i = 1; i < sortedLogs.length; i++) {
+                const logDate = new Date(sortedLogs[i].date);
+                logDate.setHours(0, 0, 0, 0);
+
+                // Calculate expected previous workout day
+                let expectedDate = new Date(currentDate);
+                expectedDate.setDate(expectedDate.getDate() - 1);
+
+                // Skip backwards over rest days
+                while (isRestDay(expectedDate.toISOString().split('T')[0])) {
+                    expectedDate.setDate(expectedDate.getDate() - 1);
+                }
+
+                if (logDate.getTime() === expectedDate.getTime()) {
+                    streak++;
+                    html += `<div class="log-item">Day ${streak}: ${formatDate(sortedLogs[i].date)} ✅ Consecutive</div>`;
+                    currentDate = logDate;
+                } else {
+                    // Check for rest days between
+                    let daysBetween = Math.floor((currentDate - logDate) / (1000 * 60 * 60 * 24));
+                    let allRestDays = true;
+
+                    for (let d = 1; d < daysBetween; d++) {
+                        let checkDate = new Date(currentDate);
+                        checkDate.setDate(checkDate.getDate() - d);
+                        if (!isRestDay(checkDate.toISOString().split('T')[0])) {
+                            allRestDays = false;
+                            break;
+                        }
+                    }
+
+                    if (allRestDays && daysBetween <= 7) {
+                        streak++;
+                        html += `<div class="log-item">Day ${streak}: ${formatDate(sortedLogs[i].date)} ✅ After rest day(s)</div>`;
+                        currentDate = logDate;
+                    } else {
+                        html += `<div class="log-item missed">❌ Streak broken at ${formatDate(sortedLogs[i].date)} (${daysBetween} days gap)</div>`;
+                        break;
+                    }
+                }
+            }
+
+            html += `<p><strong>Calculated Streak:</strong> <span style="color: #10b981; font-size: 24px; font-weight: bold;">${streak}</span> days</p>`;
+
+            if (streak !== data.streak) {
+                html += `<div class="warning">⚠️ Stored streak (${data.streak}) doesn't match calculated streak (${streak})!</div>`;
+            }
+
+            document.getElementById('streak-details').innerHTML = html;
+        }
+
+        // Display 30-day consistency
+        function displayConsistency() {
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            let html = '<div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;">';
+
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(today.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+
+                const dayLog = data.logs.find(log => log.date === dateStr);
+                const isRest = isRestDay(dateStr);
+                const isCompleted = dayLog?.workoutCompleted;
+                const isFuture = new Date(dateStr) > new Date(todayStr);
+
+                let color = '#334155'; // rest/future
+                let emoji = '⚪';
+
+                if (!isFuture && !isRest) {
+                    if (isCompleted) {
+                        color = '#10b981';
+                        emoji = '✅';
+                    } else {
+                        color = '#ef4444';
+                        emoji = '❌';
+                    }
+                }
+
+                html += `
+                    <div style="background: ${color}; padding: 10px; border-radius: 8px; text-align: center; font-size: 12px;">
+                        ${emoji}<br>${date.getDate()}
+                    </div>
+                `;
+            }
+
+            html += '</div>';
+            html += '<p style="margin-top: 15px;"><strong>Legend:</strong> ✅ Completed | ❌ Missed | ⚪ Rest/Future</p>';
+            document.getElementById('consistency').innerHTML = html;
+        }
+
+        // Display rest days
+        function displayRestDays() {
+            const html = `
+                <p>Your configured rest days are: <strong>${restDays.map(d => daysOfWeek[d]).join(', ')}</strong></p>
+                <p>Today is: <strong>${daysOfWeek[new Date().getDay()]}</strong> ${isRestDay(new Date().toISOString().split('T')[0]) ? '(REST DAY)' : '(WORKOUT DAY)'}</p>
+            `;
+            document.getElementById('rest-days').innerHTML = html;
+        }
+
+        // Recalculate streak
+        function recalculateStreak() {
+            const sortedLogs = data.logs
+                .filter(log => log.workoutCompleted)
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (sortedLogs.length === 0) {
+                data.streak = 0;
+            } else {
+                let streak = 1;
+                let currentDate = new Date(sortedLogs[0].date);
+                currentDate.setHours(0, 0, 0, 0);
+
+                for (let i = 1; i < sortedLogs.length; i++) {
+                    const logDate = new Date(sortedLogs[i].date);
+                    logDate.setHours(0, 0, 0, 0);
+
+                    let expectedDate = new Date(currentDate);
+                    expectedDate.setDate(expectedDate.getDate() - 1);
+
+                    while (isRestDay(expectedDate.toISOString().split('T')[0])) {
+                        expectedDate.setDate(expectedDate.getDate() - 1);
+                    }
+
+                    if (logDate.getTime() === expectedDate.getTime()) {
+                        streak++;
+                        currentDate = logDate;
+                    } else {
+                        let daysBetween = Math.floor((currentDate - logDate) / (1000 * 60 * 60 * 24));
+                        let allRestDays = true;
+
+                        for (let d = 1; d < daysBetween; d++) {
+                            let checkDate = new Date(currentDate);
+                            checkDate.setDate(checkDate.getDate() - d);
+                            if (!isRestDay(checkDate.toISOString().split('T')[0])) {
+                                allRestDays = false;
+                                break;
+                            }
+                        }
+
+                        if (allRestDays && daysBetween <= 7) {
+                            streak++;
+                            currentDate = logDate;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                data.streak = streak;
+            }
+
+            localStorage.setItem('fitnessData', JSON.stringify(data));
+            alert(`Streak recalculated! New streak: ${data.streak} days`);
+            location.reload();
+        }
+
+        // Download data backup
+        function downloadData() {
+            const dataStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `fittrack-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+        }
+
+        // Clear cache
+        function clearCache() {
+            if (confirm('This will clear your browser cache and reload the page. Your data will NOT be deleted. Continue?')) {
+                location.reload(true);
+            }
+        }
+
+        // Initialize
+        displayOverview();
+        displayLogs();
+        displayStreakDetails();
+        displayConsistency();
+        displayRestDays();
+    </script>
+</body>
+
+</html>

@@ -4,6 +4,18 @@
    =========================== */
 
 // ===========================
+// HELPER FUNCTIONS
+// ===========================
+
+function isRestDay(dateStr) {
+    const date = new Date(dateStr);
+    const dayOfWeek = date.getDay();
+    // Access rest days from USER_PROFILE if available, otherwise use default
+    const restDays = (typeof USER_PROFILE !== 'undefined' && USER_PROFILE.restDays) ? USER_PROFILE.restDays : [0, 4];
+    return restDays.includes(dayOfWeek);
+}
+
+// ===========================
 // AUTHENTICATION FUNCTIONS
 // ===========================
 
@@ -421,17 +433,81 @@ async function syncCloudToLocal() {
                 };
 
                 if (existingLogIndex !== -1) {
-                    fitnessData.logs[existingLogIndex] = logData;
+                    // Merge: keep newer data (prefer local if it's newer)
+                    const existing = fitnessData.logs[existingLogIndex];
+                    const existingTime = existing.updatedAt || existing.date;
+                    const cloudTime = workout.updated_at || workout.date;
+
+                    // Only overwrite if cloud data is newer OR if local doesn't have workout completed
+                    if (!existing.workoutCompleted || new Date(cloudTime) > new Date(existingTime)) {
+                        fitnessData.logs[existingLogIndex] = {
+                            ...logData,
+                            updatedAt: cloudTime
+                        };
+                    }
                 } else {
-                    fitnessData.logs.push(logData);
+                    fitnessData.logs.push({
+                        ...logData,
+                        updatedAt: workout.updated_at || new Date().toISOString()
+                    });
                 }
             });
+        }
+
+        // Recalculate streak after syncing
+        const sortedLogs = fitnessData.logs
+            .filter(log => log.workoutCompleted)
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        if (sortedLogs.length === 0) {
+            fitnessData.streak = 0;
+        } else {
+            let streak = 1;
+            let currentDate = new Date(sortedLogs[0].date);
+            currentDate.setHours(0, 0, 0, 0);
+
+            for (let i = 1; i < sortedLogs.length; i++) {
+                const logDate = new Date(sortedLogs[i].date);
+                logDate.setHours(0, 0, 0, 0);
+
+                let expectedDate = new Date(currentDate);
+                expectedDate.setDate(expectedDate.getDate() - 1);
+
+                while (isRestDay(expectedDate.toISOString().split('T')[0])) {
+                    expectedDate.setDate(expectedDate.getDate() - 1);
+                }
+
+                if (logDate.getTime() === expectedDate.getTime()) {
+                    streak++;
+                    currentDate = logDate;
+                } else {
+                    let daysBetween = Math.floor((currentDate - logDate) / (1000 * 60 * 60 * 24));
+                    let allRestDays = true;
+
+                    for (let d = 1; d < daysBetween; d++) {
+                        let checkDate = new Date(currentDate);
+                        checkDate.setDate(checkDate.getDate() - d);
+                        if (!isRestDay(checkDate.toISOString().split('T')[0])) {
+                            allRestDays = false;
+                            break;
+                        }
+                    }
+
+                    if (allRestDays && daysBetween <= 7) {
+                        streak++;
+                        currentDate = logDate;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            fitnessData.streak = streak;
         }
 
         // Save merged data to localStorage
         localStorage.setItem('fitnessData', JSON.stringify(fitnessData));
 
-        console.log('✅ Cloud data synced to local storage');
+        console.log(`✅ Cloud data synced to local storage (${workouts?.length || 0} workouts, streak: ${fitnessData.streak})`);
         return { success: true };
 
     } catch (error) {

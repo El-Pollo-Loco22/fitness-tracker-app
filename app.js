@@ -2559,6 +2559,9 @@ function saveTodayData() {
 
     const existingIndex = data.logs.findIndex(log => log.date === todayData.date);
 
+    // Add timestamp for sync purposes
+    todayData.updatedAt = new Date().toISOString();
+
     if (existingIndex !== -1) {
         data.logs[existingIndex] = todayData;
     } else {
